@@ -1,10 +1,12 @@
 
 CineBook 
+
+
 What you have:
 - backend/: Express + Mongoose server connecting to local MongoDB (default mongodb://127.0.0.1:27017/cinebook)
 - frontend/: Vite + React single page app
 
-Quick start (two terminals):
+Quick start 
 
 1) Start MongoDB .
 
@@ -19,7 +21,9 @@ Quick start (two terminals):
    npm install
    npm run dev     # dev server (Vite) shows a port (usually 5173). Frontend expects backend at http://localhost:4000/api
 
-Notes:
+Note :
+
+
 - If MongoDB is on a different host/port, set MONGO environment variable before starting backend:
     MONGO='mongodb://127.0.0.1:27017/cinebook' npm start
 - To build the frontend and serve from backend static build:
