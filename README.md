@@ -1,11 +1,29 @@
 
-  # Online Movie Booking Wireframes
+CineBook 
+What you have:
+- backend/: Express + Mongoose server connecting to local MongoDB (default mongodb://127.0.0.1:27017/cinebook)
+- frontend/: Vite + React single page app
 
-  This is a code bundle for Online Movie Booking Wireframes. The original project is available at https://www.figma.com/design/r39ojQRGsGj7QtrSt563cY/Online-Movie-Booking-Wireframes.
+Quick start (two terminals):
 
-  ## Running the code
+1) Start MongoDB .
 
-  Run `npm i` to install the dependencies.
+2) Backend:
+   cd cinebook/backend
+   npm install
+   npm run seed    # seeds sample movies
+   npm start       # server starts on http://localhost:4000
 
-  Run `npm run dev` to start the development server.
-  
+3) Frontend:
+   cd cinebook/frontend
+   npm install
+   npm run dev     # dev server (Vite) shows a port (usually 5173). Frontend expects backend at http://localhost:4000/api
+
+Notes:
+- If MongoDB is on a different host/port, set MONGO environment variable before starting backend:
+    MONGO='mongodb://127.0.0.1:27017/cinebook' npm start
+- To build the frontend and serve from backend static build:
+   cd frontend && npm run build
+   Then start backend; backend serves the `frontend/dist` files automatically.
+
+
