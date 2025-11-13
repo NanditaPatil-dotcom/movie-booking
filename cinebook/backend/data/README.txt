@@ -1,0 +1,1 @@
+this is a Optional folder for static movie poster images. we can place poster files in backend/data and update movie.poster paths accordingly.
