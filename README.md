@@ -1,33 +1,91 @@
+# CineBook - Movie Ticket Booking (MERN Stack)
 
-CineBook 
+A movie ticket booking application built with the MERN stack (MongoDB, Express.js, React, Node.js).
 
+## Features
 
-What you have:
-- backend/: Express + Mongoose server connecting to local MongoDB (default mongodb://127.0.0.1:27017/cinebook)
-- frontend/: Vite + React single page app
+- Browse movies
+- User authentication
+- Book movie tickets
+- Secure payment processing
+- Instant booking confirmation
 
-Quick start 
+## Tech Stack
 
-1) Start MongoDB .
+- **Frontend**: React with React Router
+- **Backend**: Node.js with Express.js
+- **Database**: MongoDB with Mongoose
+- **Styling**: Plain CSS
 
-2) Backend:
-   cd cinebook/backend
-   npm install
-   npm run seed    # seeds sample movies
-   npm start       # server starts on http://localhost:4000
+## Project Structure
 
-3) Frontend:
-   cd cinebook/frontend
-   npm install
-   npm run dev     # dev server (Vite) shows a port (usually 5173). Frontend expects backend at http://localhost:4000/api
+```
+movie-booking/
+├── client/          # React frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── styles/
+│   │   ├── App.jsx
+│   │   └── index.js
+│   └── package.json
+├── server/          # Express backend
+│   ├── models/
+│   ├── routes/
+│   ├── server.js
+│   ├── .env
+│   └── package.json
+└── package.json     # Root package.json
+```
 
-Note :
+## Getting Started
 
+1. **Install dependencies:**
+   ```bash
+   npm run install-all
+   ```
 
-- If MongoDB is on a different host/port, set MONGO environment variable before starting backend:
-    MONGO='mongodb://127.0.0.1:27017/cinebook' npm start
-- To build the frontend and serve from backend static build:
-   cd frontend && npm run build
-   Then start backend; backend serves the `frontend/dist` files automatically.
+2. **Start MongoDB** (make sure MongoDB is running locally)
 
+3. **Start the development servers:**
+   ```bash
+   npm run dev
+   ```
 
+   This will start both the client (port 3000) and server (port 5000).
+
+## Available Scripts
+
+- `npm run install-all` - Install dependencies for both client and server
+- `npm run dev` - Start both client and server in development mode
+- `npm run client` - Start only the React client
+- `npm run server` - Start only the Express server
+- `npm run build` - Build the React app for production
+
+## Environment Variables
+
+Create a `.env` file in the `server/` directory:
+
+```
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/movie-booking
+JWT_SECRET=your-secret-key
+```
+
+## API Endpoints
+
+- `GET /api/movies` - Get all movies
+- `GET /api/movies/:id` - Get movie by ID
+- `POST /api/movies` - Create a new movie
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
