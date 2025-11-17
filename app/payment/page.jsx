@@ -44,19 +44,48 @@ export default function PaymentPage() {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-    // Store booking confirmation
-    const confirmation = {
-      ...bookingData,
-      ...formData,
-      confirmationId: `CINE-${Date.now()}`,
-      bookingDate: new Date().toLocaleDateString(),
+      // Create booking in database
+      const bookingPayload = {
+        movieId: bookingData?.movieId || '',
+        movieTitle: bookingData?.movieTitle || '',
+        showtime: bookingData?.showtime || new Date().toISOString(),
+        seats: bookingData?.seats || [],
+        totalAmount: bookingData?.totalPrice || 0,
+        email: formData.email,
+        name: formData.name,
+        userId: localStorage.getItem('userId') || ''
+      }
+
+      const response = await fetch('http://localhost:5000/api/bookings/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingPayload)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create booking')
+      }
+
+      const result = await response.json()
+
+      const confirmation = {
+        ...bookingData,
+        ...formData,
+        confirmationId: result.confirmationId || `CINE-${Date.now()}`,
+        bookingDate: new Date().toLocaleDateString(),
+      }
+      localStorage.setItem('confirmation', JSON.stringify(confirmation))
+
+      router.push('/confirmation')
+    } catch (error) {
+      console.error('Error during payment:', error)
+      alert('Error processing payment. Please try again.')
+      setLoading(false)
     }
-    localStorage.setItem('confirmation', JSON.stringify(confirmation))
-
-    router.push('/confirmation')
   }
 
   if (!bookingData) {

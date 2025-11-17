@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,32 @@ export default function SeatsPage() {
   const movie = MOVIES.find(m => m.id === movieId)
 
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
+  const [bookedSeats, setBookedSeats] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Generate seat layout (10 rows x 12 seats)
+  useEffect(() => {
+    const fetchBookedSeats = async () => {
+      try {
+        if (!showtime || !movie) {
+          setLoading(false)
+          return
+        }
+
+        const response = await fetch(
+          `http://localhost:5000/api/bookings/booked-seats/${encodeURIComponent(movie.title)}/${encodeURIComponent(showtime)}`
+        )
+        const data = await response.json()
+        setBookedSeats(data.bookedSeats || [])
+      } catch (error) {
+        console.error('Error fetching booked seats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBookedSeats()
+  }, [movieId, showtime, movie])
+
   const generateSeats = () => {
     const seats: { id: string; status: 'available' | 'booked' }[] = []
     for (let row = 0; row < 10; row++) {
@@ -35,7 +59,7 @@ export default function SeatsPage() {
         const seatId = `${String.fromCharCode(65 + row)}${seat + 1}`
         seats.push({
           id: seatId,
-          status: Math.random() > 0.7 ? 'booked' : 'available',
+          status: bookedSeats.includes(seatId) ? 'booked' : 'available',
         })
       }
     }
@@ -70,6 +94,17 @@ export default function SeatsPage() {
 
   if (!movie) {
     return <div className="min-h-screen flex items-center justify-center">Movie not found</div>
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Loading seats...</div>
+        </div>
+      </main>
+    )
   }
 
   return (

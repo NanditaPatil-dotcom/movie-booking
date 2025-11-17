@@ -6,6 +6,13 @@ export function Navigation() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
 
+  const colors = {
+    red: '#BD292C',
+    white: '#FFFFFF',
+    light: '#D9D9D9',
+    gray: '#3F3B3B'
+  }
+
   useEffect(() => {
     const currentUser = localStorage.getItem('currentUser')
     if (currentUser) {
@@ -21,8 +28,8 @@ export function Navigation() {
 
   return (
     <nav style={{
-      borderBottom: '1px solid #374151',
-      backgroundColor: '#1f2937'
+      borderBottom: `1px solid ${colors.gray}20`,
+      backgroundColor: colors.light
     }}>
       <div style={{
         maxWidth: '80rem',
@@ -33,40 +40,41 @@ export function Navigation() {
         justifyContent: 'space-between'
       }}>
         <Link to="/" style={{
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
-          color: '#fbbf24'
+          fontSize: '1.75rem',
+          fontWeight: '800',
+          color: colors.red,
+          letterSpacing: '0.5px'
         }}>
           CineBook
         </Link>
 
         <div style={{
           display: 'flex',
-          gap: '1rem',
+          gap: '0.75rem',
           alignItems: 'center'
         }}>
           {user ? (
             <>
               <span style={{
                 fontSize: '0.875rem',
-                color: '#9ca3af'
+                color: colors.gray
               }}>
                 Welcome, {user.name}
               </span>
               <Button variant="outline" size="sm" onClick={handleLogout}>
-                Logout
+                Log Out
               </Button>
             </>
           ) : (
             <>
               <Link to="/signin">
                 <Button variant="outline" size="sm">
-                  Sign In
+                  login
                 </Button>
               </Link>
               <Link to="/signup">
                 <Button size="sm">
-                  Sign Up
+                  signup
                 </Button>
               </Link>
             </>

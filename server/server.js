@@ -18,8 +18,33 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/movie-boo
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.log(err))
 
+// Seed sample movie if missing (The Cosmic Adventure)
+const Movie = require('./models/Movie')
+async function seedSampleMovie() {
+  try {
+    const exists = await Movie.findOne({ title: 'The Cosmic Adventure' })
+    if (!exists) {
+      await Movie.create({
+        title: 'The Cosmic Adventure',
+        genre: 'Sci-Fi',
+        rating: 8.5,
+        duration: 135,
+        image: '/sci-fi-thriller-movie-poster.jpg',
+        description: 'An epic journey through space and time that will leave you breathless.',
+        releaseDate: new Date('2025-10-01')
+      })
+      console.log('Seeded sample movie: The Cosmic Adventure')
+    }
+  } catch (e) {
+    console.error('Seeding error:', e)
+  }
+}
+seedSampleMovie()
+
 // Routes
 app.use('/api/movies', require('./routes/movies'))
+app.use('/api/auth', require('./routes/auth'))
+app.use('/api/bookings', require('./routes/bookings'))
 
 app.get('/', (req, res) => {
   res.send('Movie Booking API')

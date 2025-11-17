@@ -16,7 +16,7 @@ export function MovieCard({ movie }: { movie: Movie }) {
       <CardContent className="p-0">
         <div className="relative h-64 bg-secondary overflow-hidden">
           <img
-            src={movie.image || "/placeholder.svg"}
+            src={movie.image || "/cosmic.png"}
             alt={movie.title}
             className="w-full h-full object-cover group-hover:scale-105 transition"
           />
