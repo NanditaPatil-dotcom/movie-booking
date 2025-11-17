@@ -9,7 +9,7 @@ import { Navigation } from '@/components/navigation'
 
 const MOVIES = [
   {
-    id: 1,
+    id: '1',
     title: 'The Quantum Enigma',
     genre: 'Sci-Fi',
     rating: 8.5,
@@ -17,7 +17,7 @@ const MOVIES = [
     image: '/sci-fi-thriller-movie-poster.jpg',
   },
   {
-    id: 2,
+    id: '2',
     title: 'Midnight Mystery',
     genre: 'Thriller',
     rating: 7.8,
@@ -25,7 +25,7 @@ const MOVIES = [
     image: '/thriller-mystery-movie-poster.jpg',
   },
   {
-    id: 3,
+    id: '3',
     title: 'Love in Paris',
     genre: 'Romance',
     rating: 7.2,
@@ -33,7 +33,7 @@ const MOVIES = [
     image: '/rom-com-movie-poster.png',
   },
   {
-    id: 4,
+    id: '4',
     title: 'Dragon Warriors',
     genre: 'Fantasy',
     rating: 8.9,
@@ -41,7 +41,7 @@ const MOVIES = [
     image: '/fantasy-adventure-movie-poster.png',
   },
   {
-    id: 5,
+    id: '5',
     title: 'The Last Stand',
     genre: 'Action',
     rating: 8.1,
@@ -49,7 +49,7 @@ const MOVIES = [
     image: '/action-movie-poster.png',
   },
   {
-    id: 6,
+    id: '6',
     title: 'Laughter Chronicles',
     genre: 'Comedy',
     rating: 7.5,

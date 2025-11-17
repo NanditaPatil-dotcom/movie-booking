@@ -9,6 +9,7 @@ import { Navigation } from './components/Navigation'
 import { Button } from './components/ui/Button'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { RequireAuth } from './components/RequireAuth'
+import api from './utils/axios'
 import './styles/App.css'
 
 const colors = {
@@ -21,6 +22,16 @@ const colors = {
 function useQuery() {
   const { search } = useLocation()
   return useMemo(() => new URLSearchParams(search), [search])
+}
+
+function formatTime(isoString) {
+  if (!isoString) return '10:00 AM'
+  try {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  } catch {
+    return isoString
+  }
 }
 
 function Container({ children, maxWidth = '1200px' }) {
@@ -52,12 +63,18 @@ function ShowTime() {
   const navigate = useNavigate()
   const [selected, setSelected] = useState('')
 
-  const times = ['10:00 AM', '1:30 PM', '5:00 PM', '7:30 PM', '10:00 PM']
+  const times = [
+    { display: '10:00 AM', value: '2025-10-28T10:00:00' },
+    { display: '1:30 PM', value: '2025-10-28T13:30:00' },
+    { display: '5:00 PM', value: '2025-10-28T17:00:00' },
+    { display: '7:30 PM', value: '2025-10-28T19:30:00' },
+    { display: '10:00 PM', value: '2025-10-28T22:00:00' }
+  ]
 
   const goSeats = () => {
     const movieId = id || 'sample'
     if (!selected) return
-    navigate(`/seats/${movieId}?time=${encodeURIComponent(selected)}`)
+    navigate(`/seats/${movieId}?time=${encodeURIComponent(selected.value)}`)
   }
 
   return (
@@ -73,7 +90,7 @@ function ShowTime() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem' }}>
               {times.map((t) => (
                 <button
-                  key={t}
+                  key={t.value}
                   onClick={() => setSelected(t)}
                   style={{
                     height: '2.5rem',
@@ -84,7 +101,7 @@ function ShowTime() {
                     cursor: 'pointer'
                   }}
                 >
-                  {t}
+                  {t.display}
                 </button>
               ))}
             </div>
@@ -107,6 +124,7 @@ function Payment() {
   const { id } = useParams()
   const query = useQuery()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const time = query.get('time') || '10:00 AM'
   const seats = (query.get('seats') || '').split(',').filter(Boolean)
 
@@ -119,10 +137,52 @@ function Payment() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [method, setMethod] = useState('card')
+  const [loading, setLoading] = useState(false)
 
-  const confirm = () => {
-    // Mock payment success
-    navigate('/confirmation')
+  const confirm = async () => {
+    if (!user) {
+      alert('Please log in to complete your booking')
+      navigate('/signin')
+      return
+    }
+
+    console.log('[Payment] User object:', user)
+    console.log('[Payment] Seats array:', seats)
+
+    setLoading(true)
+    try {
+      console.log('[Payment] Creating booking:', { movieId: id, showtime: time, seats, totalAmount: total })
+
+      const bookingData = {
+        userId: user._id || user.id,
+        movieId: id,
+        movieTitle: 'Movie Title', // This should come from movie data
+        showtime: time,
+        seats,
+        totalAmount: total,
+        email: user.email,
+        name: user.name
+      }
+
+      console.log('[Payment] Sending booking data:', bookingData)
+
+      const response = await api.post('/bookings/create', bookingData)
+
+      console.log('[Payment] Booking created successfully:', response.data)
+      navigate('/confirmation')
+    } catch (error) {
+      console.error('[Payment] Booking failed:', error)
+
+      if (error.response?.status === 400 && error.response?.data?.error?.includes('already booked')) {
+        alert('Booking conflict: One or more seats were already booked. Please select different seats.')
+        // Navigate back to seats page to refresh and show updated availability
+        navigate(`/seats/${id}?time=${encodeURIComponent(time)}`)
+      } else {
+        alert('Booking failed. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -169,7 +229,7 @@ function Payment() {
               <div style={{ marginBottom: '0.5rem' }}><span style={{ padding: '0.1rem 0.5rem', borderRadius: '9999px', background: colors.light, border: `1px solid ${colors.gray}33` }}>Sci-Fi</span></div>
               <div style={{ marginBottom: '0.25rem' }}>Grand Cinema Hall 1</div>
               <div style={{ marginBottom: '0.25rem' }}>Oct 28, 2025</div>
-              <div style={{ marginBottom: '0.25rem' }}>{time}</div>
+              <div style={{ marginBottom: '0.25rem' }}>{formatTime(time)}</div>
               <div style={{ marginBottom: '0.75rem' }}>Seats: {seats.join(', ') || '-'}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.25rem' }}>
                 <div>Subtotal</div><div>Rs. {subtotal}</div>
@@ -180,7 +240,9 @@ function Payment() {
               </div>
             </div>
             <div style={{ marginTop: '1rem' }}>
-              <Button size="lg" style={{ width: '100%' }} onClick={confirm}>Confirm and Pay</Button>
+              <Button size="lg" style={{ width: '100%' }} onClick={confirm} disabled={loading}>
+                {loading ? 'Processing...' : 'Confirm and Pay'}
+              </Button>
             </div>
           </Panel>
         </div>

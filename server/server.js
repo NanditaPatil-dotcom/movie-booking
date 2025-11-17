@@ -31,7 +31,14 @@ async function seedSampleMovie() {
         duration: 135,
         image: '/sci-fi-thriller-movie-poster.jpg',
         description: 'An epic journey through space and time that will leave you breathless.',
-        releaseDate: new Date('2025-10-01')
+        releaseDate: new Date('2025-10-01'),
+        showtimes: [
+          { time: '10:00 AM', bookedSeats: [] },
+          { time: '1:30 PM', bookedSeats: [] },
+          { time: '4:45 PM', bookedSeats: [] },
+          { time: '7:30 PM', bookedSeats: [] },
+          { time: '10:00 PM', bookedSeats: [] }
+        ]
       })
       console.log('Seeded sample movie: The Cosmic Adventure')
     }

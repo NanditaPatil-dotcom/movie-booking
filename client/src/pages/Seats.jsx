@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigation } from '../components/Navigation'
 import { Button } from '../components/ui/Button'
+import api from '../utils/axios'
 
 const colors = {
   red: '#BD292C',
@@ -14,6 +15,16 @@ const colors = {
 function useQuery() {
   const { search } = window.location
   return new URLSearchParams(search)
+}
+
+function formatTime(isoString) {
+  if (!isoString) return '10:00 AM'
+  try {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  } catch {
+    return isoString
+  }
 }
 
 function Container({ children, maxWidth = '1200px' }) {
@@ -50,6 +61,29 @@ export default function Seats() {
   const rows = 'ABCDEFGHIJ'.split('')
   const cols = Array.from({ length: 14 }, (_, i) => i + 1)
   const [selected, setSelected] = useState([])
+  const [bookedSeats, setBookedSeats] = useState([])
+  const [loadingSeats, setLoadingSeats] = useState(true)
+
+  // Fetch booked seats on mount
+  useEffect(() => {
+    const fetchBookedSeats = async () => {
+      try {
+        console.log('[Seats] Fetching booked seats for movie:', id, 'time:', time)
+        const response = await api.get(`/bookings/booked-seats/${id}/${encodeURIComponent(time)}`)
+        const booked = response.data.bookedSeats || []
+        console.log('[Seats] Booked seats:', booked)
+        setBookedSeats(booked)
+      } catch (error) {
+        console.error('[Seats] Failed to fetch booked seats:', error)
+        // Continue with empty booked seats on error
+        setBookedSeats([])
+      } finally {
+        setLoadingSeats(false)
+      }
+    }
+
+    fetchBookedSeats()
+  }, [id, time])
 
   // Restore booking state on mount
   useEffect(() => {
@@ -64,6 +98,12 @@ export default function Seats() {
   }, [])
 
   const toggleSeat = (seat) => {
+    // Prevent selecting already booked seats
+    if (bookedSeats.includes(seat)) {
+      alert('This seat is already booked!')
+      return
+    }
+
     setSelected((prev) =>
       prev.includes(seat) ? prev.filter((s) => s !== seat) : [...prev, seat]
     )
@@ -114,6 +154,11 @@ export default function Seats() {
             <h2 style={{ fontWeight: 800, marginBottom: '0.75rem' }}>Select your seats</h2>
             <div style={{ background: colors.white, borderRadius: '0.5rem', border: `1px solid ${colors.gray}22`, padding: '1rem' }}>
               <div style={{ textAlign: 'center', color: '#5A5656', marginBottom: '0.75rem' }}>SCREEN</div>
+              {loadingSeats && (
+                <div style={{ textAlign: 'center', padding: '1rem', color: colors.gray }}>
+                  Loading seat availability...
+                </div>
+              )}
               <div style={{ display: 'grid', gap: '0.35rem', justifyContent: 'center' }}>
                 {rows.map((r) => (
                   <div key={r} style={{ display: 'grid', gridTemplateColumns: `24px repeat(${cols.length}, 28px)`, gap: '0.35rem', alignItems: 'center' }}>
@@ -121,6 +166,8 @@ export default function Seats() {
                     {cols.map((c) => {
                       const seat = `${r}${c}`
                       const isSel = selected.includes(seat)
+                      const isBooked = bookedSeats.includes(seat)
+
                       return (
                         <div
                           key={seat}
@@ -130,17 +177,18 @@ export default function Seats() {
                             height: 28,
                             borderRadius: '0.35rem',
                             border: `1px solid ${colors.gray}33`,
-                            background: isSel ? '#BDE7C1' : '#EDEDED',
-                            cursor: 'pointer',
+                            background: isBooked ? '#FF6B6B' : (isSel ? '#BDE7C1' : '#EDEDED'),
+                            cursor: isBooked ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '0.7rem',
-                            color: colors.gray
+                            color: colors.gray,
+                            opacity: isBooked ? 0.7 : 1
                           }}
-                          title={seat}
+                          title={isBooked ? `${seat} - Already Booked` : seat}
                         >
-                          {c}
+                          {isBooked ? '❌' : c}
                         </div>
                       )
                     })}
@@ -162,7 +210,7 @@ export default function Seats() {
               <div style={{ marginBottom: '0.5rem' }}><span style={{ padding: '0.1rem 0.5rem', borderRadius: '9999px', background: colors.light, border: `1px solid ${colors.gray}33` }}>Sci-Fi</span></div>
               <div style={{ marginBottom: '0.25rem' }}>Grand Cinema Hall 1</div>
               <div style={{ marginBottom: '0.25rem' }}>Oct 28, 2025</div>
-              <div style={{ marginBottom: '0.75rem' }}>{time}</div>
+              <div style={{ marginBottom: '0.75rem' }}>{formatTime(time)}</div>
               <div style={{ marginTop: '0.75rem' }}>
                 <div>Selected Seats: {selected.join(', ') || '-'}</div>
               </div>
