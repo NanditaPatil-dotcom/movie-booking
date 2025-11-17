@@ -44,6 +44,7 @@ seedSampleMovie()
 // Routes
 app.use('/api/movies', require('./routes/movies'))
 app.use('/api/auth', require('./routes/auth'))
+app.use('/api/bookings', require('./routes/bookings'))
 
 app.get('/', (req, res) => {
   res.send('Movie Booking API')
