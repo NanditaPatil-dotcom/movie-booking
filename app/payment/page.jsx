@@ -16,6 +16,8 @@ interface BookingData {
 }
 
 export default function PaymentPage() {
+  const { checked } = useAuth()
+
   const router = useRouter()
   const [bookingData, setBookingData] = useState<BookingData | null>(null)
   const [formData, setFormData] = useState({
@@ -86,6 +88,21 @@ export default function PaymentPage() {
       alert('Error processing payment. Please try again.')
       setLoading(false)
     }
+  }
+
+  if (!authChecked) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Checking authentication...</div>
+        </div>
+      </main>
+    )
+  }
+
+  if (!checked) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
 
   if (!bookingData) {

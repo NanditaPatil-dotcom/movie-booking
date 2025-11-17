@@ -1,11 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useLocation, Link } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Home from './pages/Home'
 import Movies from './pages/Movies'
+import Seats from './pages/Seats'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import { Navigation } from './components/Navigation'
 import { Button } from './components/ui/Button'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { RequireAuth } from './components/RequireAuth'
 import './styles/App.css'
 
 const colors = {
@@ -97,96 +100,7 @@ function ShowTime() {
   )
 }
 
-// Seats selection page
-function Seats() {
-  const { id } = useParams()
-  const query = useQuery()
-  const navigate = useNavigate()
-  const time = query.get('time') || '10:00 AM'
 
-  const rows = 'ABCDEFGHIJ'.split('')
-  const cols = Array.from({ length: 14 }, (_, i) => i + 1)
-  const [selected, setSelected] = useState([])
-
-  const toggleSeat = (seat) => {
-    setSelected((prev) =>
-      prev.includes(seat) ? prev.filter((s) => s !== seat) : [...prev, seat]
-    )
-  }
-
-  const proceed = () => {
-    const movieId = id || 'sample'
-    navigate(`/payment/${movieId}?time=${encodeURIComponent(time)}&seats=${selected.join(',')}`)
-  }
-
-  return (
-    <main style={{ minHeight: '100vh', backgroundColor: colors.light, color: colors.gray }}>
-      <Navigation />
-      <Container>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '1rem' }}>
-          <Panel>
-            <h2 style={{ fontWeight: 800, marginBottom: '0.75rem' }}>Select your seats</h2>
-            <div style={{ background: colors.white, borderRadius: '0.5rem', border: `1px solid ${colors.gray}22`, padding: '1rem' }}>
-              <div style={{ textAlign: 'center', color: '#5A5656', marginBottom: '0.75rem' }}>SCREEN</div>
-              <div style={{ display: 'grid', gap: '0.35rem', justifyContent: 'center' }}>
-                {rows.map((r) => (
-                  <div key={r} style={{ display: 'grid', gridTemplateColumns: `24px repeat(${cols.length}, 28px)`, gap: '0.35rem', alignItems: 'center' }}>
-                    <div style={{ textAlign: 'center', color: '#7A7676' }}>{r}</div>
-                    {cols.map((c) => {
-                      const seat = `${r}${c}`
-                      const isSel = selected.includes(seat)
-                      return (
-                        <div
-                          key={seat}
-                          onClick={() => toggleSeat(seat)}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: '0.35rem',
-                            border: `1px solid ${colors.gray}33`,
-                            background: isSel ? '#BDE7C1' : '#EDEDED',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.7rem',
-                            color: colors.gray
-                          }}
-                          title={seat}
-                        >
-                          {c}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-              <Button size="lg" onClick={proceed} disabled={selected.length === 0}>
-                Proceed to payment
-              </Button>
-              <Button variant="secondary" size="lg" onClick={() => navigate(-1)}>Cancel</Button>
-            </div>
-          </Panel>
-          <Panel>
-            <h3 style={{ fontWeight: 800, marginBottom: '0.75rem' }}>Booking Summary</h3>
-            <div style={{ fontSize: '0.875rem', color: '#5A5656' }}>
-              <div style={{ marginBottom: '0.5rem', fontWeight: 700 }}>The Cosmic Adventure</div>
-              <div style={{ marginBottom: '0.5rem' }}><span style={{ padding: '0.1rem 0.5rem', borderRadius: '9999px', background: colors.light, border: `1px solid ${colors.gray}33` }}>Sci-Fi</span></div>
-              <div style={{ marginBottom: '0.25rem' }}>Grand Cinema Hall 1</div>
-              <div style={{ marginBottom: '0.25rem' }}>Oct 28, 2025</div>
-              <div style={{ marginBottom: '0.75rem' }}>{time}</div>
-              <div style={{ marginTop: '0.75rem' }}>
-                <div>Selected Seats: {selected.join(', ') || '-'}</div>
-              </div>
-            </div>
-          </Panel>
-        </div>
-      </Container>
-    </main>
-  )
-}
 
 // Payment page
 function Payment() {
@@ -299,21 +213,31 @@ function Confirmation() {
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/movies" element={<Movies />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/showtime/:id" element={<ShowTime />} />
-          <Route path="/showtime" element={<ShowTime />} />
-          <Route path="/seats/:id" element={<Seats />} />
-          <Route path="/payment/:id" element={<Payment />} />
-          <Route path="/confirmation" element={<Confirmation />} />
-        </Routes>
-      </div>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/movies" element={<Movies />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/showtime/:id" element={<ShowTime />} />
+            <Route path="/showtime" element={<ShowTime />} />
+            <Route path="/seats/:id" element={<Seats />} />
+            <Route path="/payment/:id" element={
+              <RequireAuth>
+                <Payment />
+              </RequireAuth>
+            } />
+            <Route path="/confirmation" element={
+              <RequireAuth>
+                <Confirmation />
+              </RequireAuth>
+            } />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
   )
 }
 

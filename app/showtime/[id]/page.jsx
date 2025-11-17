@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -18,11 +18,24 @@ const MOVIES = [
 const SHOWTIMES = ['10:00 AM', '1:30 PM', '4:45 PM', '7:30 PM', '10:00 PM']
 
 export default function ShowtimePage() {
+  const { checked } = useAuth()
+
   const params = useParams()
   const router = useRouter()
   const movieId = parseInt(params.id as string)
   const movie = MOVIES.find(m => m.id === movieId)
   const [selectedShowtime, setSelectedShowtime] = useState<string | null>(null)
+
+  if (!checked) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Checking authentication...</div>
+        </div>
+      </main>
+    )
+  }
 
   if (!movie) {
     return <div className="min-h-screen flex items-center justify-center">Movie not found</div>

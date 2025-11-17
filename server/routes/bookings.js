@@ -4,6 +4,7 @@ const Booking = require('../models/Booking')
 const Showtime = require('../models/Showtime')
 const User = require('../models/User')
 const Movie = require('../models/Movie')
+const SeatSelection = require('../models/SeatSelection')
 
 router.post('/create', async (req, res) => {
   try {
@@ -105,6 +106,72 @@ router.get('/test', async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/save-seats', async (req, res) => {
+  try {
+    const { userId, movieId, movieTitle, showtime, seats } = req.body
+
+    if (!userId || !movieId || !movieTitle || !showtime) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    const showtimeDate = new Date(showtime)
+
+    const seatSelection = await SeatSelection.findOneAndUpdate(
+      {
+        user: userId,
+        movieId: movieId,
+        showtime: {
+          $gte: new Date(showtimeDate.getTime() - 5000),
+          $lte: new Date(showtimeDate.getTime() + 5000)
+        }
+      },
+      {
+        user: userId,
+        movieId: movieId,
+        movieTitle: movieTitle,
+        showtime: showtimeDate,
+        seats: seats || [],
+        updatedAt: new Date()
+      },
+      { upsert: true, new: true }
+    )
+
+    res.json({
+      success: true,
+      seatSelection
+    })
+  } catch (error) {
+    console.error('Error saving seat selection:', error)
+    res.status(500).json({ error: 'Failed to save seat selection' })
+  }
+})
+
+router.get('/selected-seats/:userId/:movieId/:showtime', async (req, res) => {
+  try {
+    const { userId, movieId, showtime } = req.params
+
+    const showtimeDate = new Date(decodeURIComponent(showtime))
+
+    const seatSelection = await SeatSelection.findOne({
+      user: userId,
+      movieId: parseInt(movieId),
+      showtime: {
+        $gte: new Date(showtimeDate.getTime() - 5000),
+        $lte: new Date(showtimeDate.getTime() + 5000)
+      }
+    })
+
+    if (!seatSelection) {
+      return res.json({ selectedSeats: [] })
+    }
+
+    res.json({ selectedSeats: seatSelection.seats || [] })
+  } catch (error) {
+    console.error('Error fetching selected seats:', error)
+    res.status(500).json({ error: 'Failed to fetch selected seats' })
   }
 })
 

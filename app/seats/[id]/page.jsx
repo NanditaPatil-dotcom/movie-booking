@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Navigation } from '@/components/navigation'
+import { useAuth } from '@/hooks/use-auth'
 
 const MOVIES = [
   { id: 1, title: 'The Quantum Enigma' },
@@ -18,6 +19,8 @@ const MOVIES = [
 const SEAT_PRICE = 150
 
 export default function SeatsPage() {
+  const { checked } = useAuth()
+
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -28,29 +31,54 @@ export default function SeatsPage() {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [bookedSeats, setBookedSeats] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchBookedSeats = async () => {
+    const currentUser = localStorage.getItem('currentUser')
+    if (currentUser) {
+      const user = JSON.parse(currentUser)
+      setUserId(user.id || user._id)
+      setIsAuthenticated(true)
+    } else {
+      router.push('/signin')
+      return
+    }
+    setAuthChecked(true)
+  }, [router])
+
+  useEffect(() => {
+    const fetchSeatsData = async () => {
       try {
         if (!showtime || !movie) {
           setLoading(false)
           return
         }
 
-        const response = await fetch(
-          `http://localhost:5000/api/bookings/booked-seats/${encodeURIComponent(movie.title)}/${encodeURIComponent(showtime)}`
-        )
-        const data = await response.json()
-        setBookedSeats(data.bookedSeats || [])
+        const [bookedResponse, selectedResponse] = await Promise.all([
+          fetch(
+            `http://localhost:5000/api/bookings/booked-seats/${encodeURIComponent(movie.title)}/${encodeURIComponent(showtime)}`
+          ),
+          userId ? fetch(
+            `http://localhost:5000/api/bookings/selected-seats/${userId}/${movieId}/${encodeURIComponent(showtime)}`
+          ) : Promise.resolve(new Response('{"selectedSeats": []}'))
+        ])
+
+        const bookedData = await bookedResponse.json()
+        setBookedSeats(bookedData.bookedSeats || [])
+
+        const selectedData = await selectedResponse.json()
+        setSelectedSeats(selectedData.selectedSeats || [])
       } catch (error) {
-        console.error('Error fetching booked seats:', error)
+        console.error('Error fetching seats data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchBookedSeats()
-  }, [movieId, showtime, movie])
+    if (userId || !userId) {
+      fetchSeatsData()
+    }
+  }, [movieId, showtime, movie, userId])
 
   const generateSeats = () => {
     const seats: { id: string; status: 'available' | 'booked' }[] = []
@@ -69,13 +97,36 @@ export default function SeatsPage() {
   const allSeats = generateSeats()
   const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
+  const saveSeatSelection = async (seats: string[]) => {
+    if (!userId) return
+
+    try {
+      await fetch('http://localhost:5000/api/bookings/save-seats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          movieId,
+          movieTitle: movie?.title,
+          showtime,
+          seats
+        })
+      })
+    } catch (error) {
+      console.error('Error saving seat selection:', error)
+    }
+  }
+
   const toggleSeat = (seatId: string) => {
     const seat = allSeats.find(s => s.id === seatId)
     if (seat?.status === 'booked') return
 
-    setSelectedSeats(prev =>
-      prev.includes(seatId) ? prev.filter(s => s !== seatId) : [...prev, seatId]
-    )
+    const updatedSeats = selectedSeats.includes(seatId)
+      ? selectedSeats.filter(s => s !== seatId)
+      : [...selectedSeats, seatId]
+
+    setSelectedSeats(updatedSeats)
+    saveSeatSelection(updatedSeats)
   }
 
   const handleContinue = () => {
@@ -90,6 +141,17 @@ export default function SeatsPage() {
       localStorage.setItem('bookingData', JSON.stringify(bookingData))
       router.push('/payment')
     }
+  }
+
+  if (!checked) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Checking authentication...</div>
+        </div>
+      </main>
+    )
   }
 
   if (!movie) {

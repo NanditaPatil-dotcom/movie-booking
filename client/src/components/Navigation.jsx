@@ -1,10 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from './ui/Button'
-import { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
 export function Navigation() {
   const navigate = useNavigate()
-  const [user, setUser] = useState(null)
+  const { user, logout } = useAuth()
 
   const colors = {
     red: '#BD292C',
@@ -13,16 +13,8 @@ export function Navigation() {
     gray: '#3F3B3B'
   }
 
-  useEffect(() => {
-    const currentUser = localStorage.getItem('currentUser')
-    if (currentUser) {
-      setUser(JSON.parse(currentUser))
-    }
-  }, [])
-
   const handleLogout = () => {
-    localStorage.removeItem('currentUser')
-    setUser(null)
+    logout()
     navigate('/')
   }
 

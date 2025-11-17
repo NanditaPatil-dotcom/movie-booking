@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navigation } from '@/components/navigation'
@@ -18,6 +19,9 @@ interface Confirmation {
 }
 
 export default function ConfirmationPage() {
+  const { checked } = useAuth()
+
+  const router = useRouter()
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
 
   useEffect(() => {
@@ -26,6 +30,21 @@ export default function ConfirmationPage() {
       setConfirmation(JSON.parse(data))
     }
   }, [])
+
+  if (!checked) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Checking authentication...</div>
+        </div>
+      </main>
+    )
+  }
+
+  if (!checked) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  }
 
   if (!confirmation) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>

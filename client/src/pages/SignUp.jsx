@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import axios from 'axios'
+import api from '../utils/axios'
 import { Button } from '../components/ui/Button'
 import { Navigation } from '../components/Navigation'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function SignUp() {
   const colors = {
@@ -13,6 +14,7 @@ export default function SignUp() {
   }
 
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,10 +26,9 @@ export default function SignUp() {
     setError('')
     setLoading(true)
     try {
-      const res = await axios.post('/api/auth/signup', { name, email, password })
+      const res = await api.post('/auth/signup', { name, email, password })
       const { user, token } = res.data
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('currentUser', JSON.stringify(user))
+      login(token, user)
       navigate('/')
     } catch (err) {
       const msg = err?.response?.data?.message || 'Signup failed'
