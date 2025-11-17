@@ -3,6 +3,7 @@ import { useMemo, useState, useEffect } from 'react'
 import Home from './pages/Home'
 import Movies from './pages/Movies'
 import Seats from './pages/Seats'
+import Showtime from './pages/Showtime'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import { Navigation } from './components/Navigation'
@@ -57,65 +58,6 @@ function Panel({ children, style }) {
   )
 }
 
-// ShowTime selection page
-function ShowTime() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const [selected, setSelected] = useState('')
-
-  const times = [
-    { display: '10:00 AM', value: '2025-10-28T10:00:00' },
-    { display: '1:30 PM', value: '2025-10-28T13:30:00' },
-    { display: '5:00 PM', value: '2025-10-28T17:00:00' },
-    { display: '7:30 PM', value: '2025-10-28T19:30:00' },
-    { display: '10:00 PM', value: '2025-10-28T22:00:00' }
-  ]
-
-  const goSeats = () => {
-    const movieId = id || 'sample'
-    if (!selected) return
-    navigate(`/seats/${movieId}?time=${encodeURIComponent(selected.value)}`)
-  }
-
-  return (
-    <main style={{ minHeight: '100vh', backgroundColor: colors.light, color: colors.gray }}>
-      <Navigation />
-      <Container>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem' }}>
-          <Panel style={{ height: '22rem' }}>
-            <div style={{ height: '100%', background: '#BFBFBF', borderRadius: '0.5rem' }} />
-          </Panel>
-          <Panel>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem' }}>Select Show Time</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem' }}>
-              {times.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => setSelected(t)}
-                  style={{
-                    height: '2.5rem',
-                    borderRadius: '0.5rem',
-                    border: `1px solid ${colors.gray}${selected === t ? '55' : '33'}`,
-                    background: selected === t ? colors.light : colors.white,
-                    color: colors.gray,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {t.display}
-                </button>
-              ))}
-            </div>
-            <div style={{ marginTop: '1rem' }}>
-              <Button size="lg" style={{ width: '100%' }} onClick={goSeats} disabled={!selected}>
-                Select Movie Seats
-              </Button>
-            </div>
-          </Panel>
-        </div>
-      </Container>
-    </main>
-  )
-}
 
 
 
@@ -125,7 +67,7 @@ function Payment() {
   const query = useQuery()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const time = query.get('time') || '10:00 AM'
+  const time = query.get('showtime') || '10:00 AM'
   const seats = (query.get('seats') || '').split(',').filter(Boolean)
 
   const pricePerSeat = 90
@@ -176,7 +118,7 @@ function Payment() {
       if (error.response?.status === 400 && error.response?.data?.error?.includes('already booked')) {
         alert('Booking conflict: One or more seats were already booked. Please select different seats.')
         // Navigate back to seats page to refresh and show updated availability
-        navigate(`/seats/${id}?time=${encodeURIComponent(time)}`)
+        navigate(`/seats/${id}?showtime=${encodeURIComponent(time)}`)
       } else {
         alert('Booking failed. Please try again.')
       }
@@ -283,8 +225,7 @@ function App() {
             <Route path="/movies" element={<Movies />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route path="/showtime/:id" element={<ShowTime />} />
-            <Route path="/showtime" element={<ShowTime />} />
+            <Route path="/showtime/:id" element={<Showtime />} />
             <Route path="/seats/:id" element={<Seats />} />
             <Route path="/payment/:id" element={
               <RequireAuth>

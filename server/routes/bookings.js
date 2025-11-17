@@ -6,119 +6,135 @@ const Showtime = require('../models/Showtime')
 const User = require('../models/User')
 const Movie = require('../models/Movie')
 const SeatSelection = require('../models/SeatSelection')
+const { findShowtime } = require('../utils/timeUtils')
 
 // POST /api/bookings/create
 // Creates a new booking with seat locking and validation
 // POST /api/bookings/create  (REPLACEMENT)
+// POST /api/bookings/create  (atomic, no transactions)
 router.post('/create', async (req, res) => {
-  const session = await mongoose.startSession();
   try {
-    await session.withTransaction(async () => {
-      const { userId, movieId, showtime: selectedShowtime, seats, totalAmount, email, name } = req.body;
+    console.log('req.body:', JSON.stringify(req.body, null, 2));
+    const { userId, movieId, showtime: selectedShowtime, seats, totalAmount, email, name } = req.body;
 
-      console.log('[BOOKING] start', { userId, movieId, selectedShowtime, seats, totalAmount });
+    console.log('[BOOKING] start', { userId, movieId, selectedShowtime, seats, totalAmount });
 
-      // Basic validations
-      if (!Array.isArray(seats) || seats.length === 0) {
-        return res.status(400).json({ error: 'No seats selected or invalid seats format' });
-      }
-      if (!userId || !movieId || !selectedShowtime) {
-        return res.status(400).json({ error: 'Missing required fields: userId, movieId, showtime' });
-      }
-      if (!totalAmount || typeof totalAmount !== 'number' || totalAmount <= 0) {
-        return res.status(400).json({ error: 'Invalid total amount' });
-      }
+    // basic validation
+    if (!Array.isArray(seats) || seats.length === 0) {
+      return res.status(400).json({ error: 'No seats selected or invalid seats format' });
+    }
+    if (!userId || !movieId || !selectedShowtime) {
+      return res.status(400).json({ error: 'Missing required fields: userId, movieId, showtime' });
+    }
+    if (!totalAmount || typeof totalAmount !== 'number' || totalAmount <= 0) {
+      return res.status(400).json({ error: 'Invalid total amount' });
+    }
 
-      // normalize incoming seats to consistent strings
-      const selectedClean = seats.map(s => String(s).trim().toUpperCase());
+    // normalize incoming seats
+    const selectedClean = seats.map(s => String(s).trim().toUpperCase());
 
-      // Fetch movie within session
-      const movie = await Movie.findById(movieId).session(session);
-      if (!movie) {
-        console.error('[BOOKING] movie not found', movieId);
-        return res.status(404).json({ error: 'Movie not found' });
-      }
-
-      // find showtime object by exact string match (use the string stored in DB)
-      const showtimeObj = movie.showtimes.find(st => String(st.time) === String(selectedShowtime));
-      if (!showtimeObj) {
-        console.error('[BOOKING] showtime not found', { movieId, selectedShowtime, showtimes: movie.showtimes.map(s => s.time) });
-        return res.status(404).json({ error: 'Showtime not found for this movie' });
-      }
-
-      // initialize bookedSeats if absent
-      if (!Array.isArray(showtimeObj.bookedSeats)) {
-        showtimeObj.bookedSeats = [];
-      }
-
-      // normalize alreadyBooked for comparison
-      const bookedClean = showtimeObj.bookedSeats.map(s => String(s).trim().toUpperCase());
-
-      // detect conflicts
-      const conflictingSeats = selectedClean.filter(seat => bookedClean.includes(seat));
-      if (conflictingSeats.length > 0) {
-        console.log('[BOOKING] conflict', { requested: selectedClean, conflictingSeats });
-        return res.status(400).json({ error: 'Seat already booked', conflictingSeats });
-      }
-
-      // push seats into subdocument's bookedSeats
-      // modify the subdocument in-memory then save movie (inside session)
-      showtimeObj.bookedSeats.push(...selectedClean);
-
-      // persist movie update inside session
-      await movie.save({ session });
-
-      // ensure user exists or create a guest user (inside session)
-      let user = await User.findById(userId).session(session);
-      if (!user) {
-        if (!email || !name) {
-          console.error('[BOOKING] user missing and no email/name to create guest', { userId });
-          return res.status(400).json({ error: 'User not found and missing email/name for creation' });
-        }
-        const created = await User.create([{
-          name,
-          email,
-          password: 'guest' // make sure your User model tolerates this
-        }], { session });
-        user = created[0];
-      }
-
-      // Create booking: keep showtime as the string stored in the movie doc to avoid Date parsing issues
-      const bookingDoc = {
-        user: user._id,
-        movie: movieId,
-        showtime: showtimeObj.time, // store the same string as in movie.showtimes
-        seats: selectedClean,
-        totalAmount,
-        status: 'confirmed'
-      };
-
-      const createdBooking = await Booking.create([bookingDoc], { session });
-      const booking = createdBooking[0];
-
-      console.log('[BOOKING] success', { bookingId: booking._id, userId: user._id, movieId, seats: selectedClean, showtime: showtimeObj.time });
-
-      // Return success response from inside transaction callback
-      return res.status(200).json({
-        success: true,
-        booking: booking._id,
-        confirmationId: `CINE-${booking._id}`
+    // Fetch movie to find exact showtime for tolerant matching
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.status(400).json({ error: 'Movie not found' });
+    }
+    const showtimeObj = findShowtime(movie, selectedShowtime);
+    if (!showtimeObj) {
+      return res.status(404).json({
+        error: 'Showtime not found',
+        availableShowtimes: movie.showtimes.map(s => s.time)
       });
-    }); // end transaction
+    }
+    const exactShowtime = showtimeObj.time;
+
+    // ATOMIC STEP:
+    // Try to push seats into the matched showtime's bookedSeats only if that showtime
+    // exists AND none of its bookedSeats are in selectedClean.
+    // Use $elemMatch so both conditions apply to the same array element.
+    const filter = {
+      _id: movieId,
+      showtimes: {
+        $elemMatch: {
+          time: exactShowtime,
+          bookedSeats: { $nin: selectedClean } // for arrays, $nin ensures none of the elements equal any of selectedClean
+        }
+      }
+    };
+
+    const update = {
+      $push: { 'showtimes.$.bookedSeats': { $each: selectedClean } }
+    };
+
+    const updateResult = await Movie.updateOne(filter, update);
+
+    if (updateResult.matchedCount === 0 || updateResult.modifiedCount === 0) {
+      // No matching showtime OR some seat already booked (so update didn't happen)
+      return res.status(400).json({ error: 'Seat already booked or showtime not found' });
+    }
+
+    // At this point, seats were atomically reserved in the movie doc.
+    // Ensure user exists (create guest if necessary)
+    let user = await User.findById(userId);
+    if (!user) {
+      if (!email || !name) {
+        // Rollback the seat reservation as best-effort
+        await Movie.updateOne(
+          { _id: movieId, 'showtimes.time': String(selectedShowtime) },
+          { $pullAll: { 'showtimes.$.bookedSeats': selectedClean } }
+        );
+        return res.status(400).json({ error: 'User not found and missing email/name for creation' });
+      }
+      const created = await User.create({ name, email, password: 'guest' });
+      user = created;
+    }
+
+    // Create booking record
+    const bookingDoc = {
+      user: user._id,
+      movie: movieId,
+      showtime: exactShowtime, // use exact showtime from DB
+      seats: selectedClean,
+      totalAmount,
+      status: 'confirmed'
+    };
+
+    const booking = await Booking.create(bookingDoc);
+
+    console.log('[BOOKING] success', { bookingId: booking._id, userId: user._id, movieId, seats: selectedClean, showtime: selectedShowtime });
+
+    return res.status(200).json({
+      success: true,
+      booking: booking._id,
+      confirmationId: `CINE-${booking._id}`
+    });
+
   } catch (err) {
-    console.error('[BOOKING] transaction error:', err);
-    // surface the error message to client to help debugging (remove in prod)
+    console.error('[BOOKING] error:', err);
+
+    // If error happened after seats were pushed, try best-effort rollback
+    try {
+      if (movie && exactShowtime && selectedClean) {
+        await Movie.updateOne(
+          { _id: movieId, 'showtimes.time': exactShowtime },
+          { $pullAll: { 'showtimes.$.bookedSeats': selectedClean } }
+        );
+        console.log('[BOOKING] rollback attempted for seats', selectedClean);
+      }
+    } catch (rbErr) {
+      console.error('[BOOKING] rollback failed:', rbErr);
+    }
+
     return res.status(500).json({ error: 'Failed to create booking', detail: err.message });
-  } finally {
-    session.endSession();
   }
 });
+
 
 
 // GET /api/bookings/booked-seats/:movieId/:showtime
 // Returns all seats that are already booked for a specific movie showtime
 router.get('/booked-seats/:movieId/:showtime', async (req, res) => {
   try {
+    console.log('req.params:', JSON.stringify(req.params, null, 2));
     const { movieId, showtime: selectedShowtime } = req.params
 
     console.log('Fetching booked seats:', { movieId, selectedShowtime })
@@ -129,12 +145,16 @@ router.get('/booked-seats/:movieId/:showtime', async (req, res) => {
       console.error('Movie not found:', movieId)
       return res.status(404).json({ error: 'Movie not found' })
     }
+    console.log('Movie showtimes:', movie.showtimes)
 
     // Find the correct showtime object
-    const showtime = movie.showtimes.find(st => st.time === selectedShowtime)
+    const showtime = findShowtime(movie, selectedShowtime)
     if (!showtime) {
       console.error('Showtime not found:', { movieId, selectedShowtime })
-      return res.status(404).json({ error: 'Showtime not found for this movie' })
+      return res.status(404).json({
+        error: 'Showtime not found for this movie',
+        availableShowtimes: movie.showtimes.map(s => s.time)
+      })
     }
 
     // Return booked seats (initialize as empty array if not exists)
@@ -181,10 +201,7 @@ router.post('/save-seats', async (req, res) => {
       {
         user: userId,
         movieId: movieId,
-        showtime: {
-          $gte: new Date(showtimeDate.getTime() - 5000),
-          $lte: new Date(showtimeDate.getTime() + 5000)
-        }
+        showtime: showtimeDate
       },
       {
         user: userId,
@@ -216,10 +233,7 @@ router.get('/selected-seats/:userId/:movieId/:showtime', async (req, res) => {
     const seatSelection = await SeatSelection.findOne({
       user: userId,
       movieId: parseInt(movieId),
-      showtime: {
-        $gte: new Date(showtimeDate.getTime() - 5000),
-        $lte: new Date(showtimeDate.getTime() + 5000)
-      }
+      showtime: showtimeDate
     })
 
     if (!seatSelection) {

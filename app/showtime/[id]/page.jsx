@@ -7,78 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Navigation } from '@/components/navigation'
 import { useAuth } from '@/hooks/use-auth'
 
-// Mock movie data with showtimes for development
-const MOCK_MOVIES = [
-  {
-    _id: '1',
-    title: 'The Quantum Enigma',
-    duration: 148,
-    showtimes: [
-      { time: '10:00 AM', bookedSeats: [] },
-      { time: '1:30 PM', bookedSeats: [] },
-      { time: '4:45 PM', bookedSeats: [] },
-      { time: '7:30 PM', bookedSeats: [] },
-      { time: '10:00 PM', bookedSeats: [] }
-    ]
-  },
-  {
-    _id: '2',
-    title: 'Midnight Mystery',
-    duration: 125,
-    showtimes: [
-      { time: '11:00 AM', bookedSeats: [] },
-      { time: '2:30 PM', bookedSeats: [] },
-      { time: '5:45 PM', bookedSeats: [] },
-      { time: '8:30 PM', bookedSeats: [] }
-    ]
-  },
-  {
-    _id: '3',
-    title: 'Love in Paris',
-    duration: 110,
-    showtimes: [
-      { time: '10:30 AM', bookedSeats: [] },
-      { time: '1:00 PM', bookedSeats: [] },
-      { time: '4:00 PM', bookedSeats: [] },
-      { time: '7:00 PM', bookedSeats: [] },
-      { time: '9:30 PM', bookedSeats: [] }
-    ]
-  },
-  {
-    _id: '4',
-    title: 'Dragon Warriors',
-    duration: 165,
-    showtimes: [
-      { time: '12:00 PM', bookedSeats: [] },
-      { time: '3:30 PM', bookedSeats: [] },
-      { time: '7:00 PM', bookedSeats: [] },
-      { time: '10:30 PM', bookedSeats: [] }
-    ]
-  },
-  {
-    _id: '5',
-    title: 'The Last Stand',
-    duration: 135,
-    showtimes: [
-      { time: '11:30 AM', bookedSeats: [] },
-      { time: '2:45 PM', bookedSeats: [] },
-      { time: '6:00 PM', bookedSeats: [] },
-      { time: '9:15 PM', bookedSeats: [] }
-    ]
-  },
-  {
-    _id: '6',
-    title: 'Laughter Chronicles',
-    duration: 95,
-    showtimes: [
-      { time: '10:15 AM', bookedSeats: [] },
-      { time: '12:45 PM', bookedSeats: [] },
-      { time: '3:15 PM', bookedSeats: [] },
-      { time: '5:45 PM', bookedSeats: [] },
-      { time: '8:15 PM', bookedSeats: [] }
-    ]
-  }
-]
+// No mock data, fetch from server
 
 export default function ShowtimePage() {
   const { checked } = useAuth()
@@ -92,16 +21,11 @@ export default function ShowtimePage() {
   const [selectedShowtime, setSelectedShowtime] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate API call with mock data
     const fetchMovie = async () => {
       try {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        const movieData = MOCK_MOVIES.find(m => m._id === movieId)
-        if (!movieData) {
-          throw new Error('Movie not found')
-        }
+        const response = await fetch(`http://localhost:5000/api/movies/${movieId}`)
+        if (!response.ok) throw new Error('Movie not found')
+        const movieData = await response.json()
         setMovie(movieData)
       } catch (err) {
         setError(err.message)

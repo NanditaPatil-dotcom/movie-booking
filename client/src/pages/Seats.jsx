@@ -19,12 +19,20 @@ function useQuery() {
 
 function formatTime(isoString) {
   if (!isoString) return '10:00 AM'
-  try {
-    const date = new Date(isoString)
+  // If it's an ISO timestamp or any parsable date, format it to locale time
+  const date = new Date(isoString)
+  if (!isNaN(date)) {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-  } catch {
-    return isoString
   }
+
+  // If it's already a human-readable time like "10:00 AM", normalize and return
+  const timeMatch = String(isoString).trim().match(/^(\d{1,2}:\d{2}\s?(AM|PM))$/i)
+  if (timeMatch) {
+    return timeMatch[0].toUpperCase()
+  }
+
+  // Fallback to returning the raw string
+  return String(isoString)
 }
 
 function Container({ children, maxWidth = '1200px' }) {
@@ -56,7 +64,8 @@ export default function Seats() {
   const query = useQuery()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const time = query.get('time') || '10:00 AM'
+  // Accept either `showtime` (used in some places) or `time` (used elsewhere)
+  const time = query.get('showtime') || query.get('time') || '10:00 AM'
 
   const rows = 'ABCDEFGHIJ'.split('')
   const cols = Array.from({ length: 14 }, (_, i) => i + 1)
@@ -122,6 +131,7 @@ export default function Seats() {
         showtimeId: time, // Using time as showtimeId for simplicity
         selectedSeats: selected,
         price: 90, // Price per seat
+        // Use `time` in redirectPath since SignIn/payment handlers expect `time` param
         redirectPath: `/seats/${movieId}?time=${encodeURIComponent(time)}`
       }
 
