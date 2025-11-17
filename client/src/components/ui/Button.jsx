@@ -1,35 +1,43 @@
 import React from 'react'
 
 export function Button({ variant = 'default', size = 'default', children, ...props }) {
+  const colors = {
+    red: '#BD292C',
+    white: '#FFFFFF',
+    light: '#D9D9D9',
+    gray: '#3F3B3B'
+  }
+
   const baseStyle = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '0.5rem',
     whiteSpace: 'nowrap',
-    borderRadius: '0.375rem',
+    borderRadius: '9999px',
     fontSize: '0.875rem',
-    fontWeight: '500',
+    fontWeight: '600',
     transition: 'all 0.2s',
-    border: 'none',
+    border: '1px solid transparent',
     cursor: 'pointer',
     outline: 'none'
   }
 
   const variantStyles = {
     default: {
-      backgroundColor: '#fbbf24',
-      color: '#1f2937',
-      border: '1px solid #fbbf24'
+      backgroundColor: colors.red,
+      color: colors.white,
+      borderColor: colors.red
     },
     outline: {
-      backgroundColor: 'transparent',
-      color: '#fbbf24',
-      border: '1px solid #fbbf24'
+      backgroundColor: colors.white,
+      color: colors.red,
+      borderColor: colors.red
     },
     secondary: {
-      backgroundColor: '#374151',
-      color: '#f9fafb'
+      backgroundColor: colors.light,
+      color: colors.gray,
+      borderColor: '#C8C8C8'
     }
   }
 
@@ -40,12 +48,13 @@ export function Button({ variant = 'default', size = 'default', children, ...pro
     },
     sm: {
       height: '2rem',
-      padding: '0.5rem 0.75rem',
+      padding: '0.25rem 0.75rem',
       fontSize: '0.75rem'
     },
     lg: {
-      height: '2.5rem',
-      padding: '0.5rem 1.5rem'
+      height: '2.75rem',
+      padding: '0.5rem 1.5rem',
+      fontSize: '1rem'
     }
   }
 
@@ -55,8 +64,22 @@ export function Button({ variant = 'default', size = 'default', children, ...pro
     ...sizeStyles[size]
   }
 
+  const hoverStyle = (e, isOver) => {
+    if (variant === 'default') {
+      e.currentTarget.style.backgroundColor = isOver ? '#A72326' : colors.red
+      e.currentTarget.style.borderColor = isOver ? '#A72326' : colors.red
+    } else if (variant === 'outline') {
+      e.currentTarget.style.backgroundColor = isOver ? '#FFF5F5' : colors.white
+    }
+  }
+
   return (
-    <button style={style} {...props}>
+    <button
+      style={style}
+      onMouseEnter={(e) => hoverStyle(e, true)}
+      onMouseLeave={(e) => hoverStyle(e, false)}
+      {...props}
+    >
       {children}
     </button>
   )

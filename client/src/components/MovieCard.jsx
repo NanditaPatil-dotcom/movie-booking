@@ -1,28 +1,43 @@
 export function MovieCard({ movie }) {
+  const colors = {
+    red: '#BD292C',
+    white: '#FFFFFF',
+    light: '#D9D9D9',
+    gray: '#3F3B3B'
+  }
+
   return (
-    <div style={{
-      border: '1px solid #374151',
-      borderRadius: '0.5rem',
-      overflow: 'hidden',
-      height: '100%',
-      cursor: 'pointer',
-      transition: 'border-color 0.2s',
-      backgroundColor: '#1f2937'
-    }}
-    onMouseEnter={(e) => e.target.style.borderColor = '#fbbf24'}
-    onMouseLeave={(e) => e.target.style.borderColor = '#374151'}
+    <div
+      style={{
+        border: `1px solid ${colors.gray}33`,
+        borderRadius: '0.75rem',
+        overflow: 'hidden',
+        height: '100%',
+        cursor: 'pointer',
+        transition: 'box-shadow 0.2s, border-color 0.2s',
+        backgroundColor: colors.white,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
+        e.currentTarget.style.borderColor = `${colors.red}55`
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)'
+        e.currentTarget.style.borderColor = `${colors.gray}33`
+      }}
     >
-      <div style={{
-        padding: 0
-      }}>
-        <div style={{
-          position: 'relative',
-          height: '16rem',
-          backgroundColor: '#374151',
-          overflow: 'hidden'
-        }}>
+      <div style={{ padding: 0 }}>
+        <div
+          style={{
+            position: 'relative',
+            height: '16rem',
+            backgroundColor: '#BFBFBF',
+            overflow: 'hidden'
+          }}
+        >
           <img
-            src={movie.image || "/placeholder.svg"}
+            src={movie.image || '/placeholder.svg'}
             alt={movie.title}
             style={{
               width: '100%',
@@ -30,41 +45,39 @@ export function MovieCard({ movie }) {
               objectFit: 'cover',
               transition: 'transform 0.2s'
             }}
-            onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           />
         </div>
-        <div style={{
-          padding: '1rem'
-        }}>
-          <h3 style={{
-            fontWeight: 'bold',
-            fontSize: '1.125rem',
-            lineHeight: '1.75rem',
-            marginBottom: '0.5rem',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
-          }}>{movie.title}</h3>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.25rem',
-            fontSize: '0.875rem',
-            color: '#9ca3af'
-          }}>
+        <div style={{ padding: '1rem' }}>
+          <h3
+            style={{
+              fontWeight: '700',
+              fontSize: '1.125rem',
+              lineHeight: '1.5rem',
+              marginBottom: '0.5rem',
+              color: colors.gray,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}
+          >
+            {movie.title}
+          </h3>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.25rem',
+              fontSize: '0.875rem',
+              color: '#5A5656'
+            }}
+          >
             <p>Genre: {movie.genre}</p>
             <p>Duration: {movie.duration} min</p>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <span style={{
-                color: '#fbbf24',
-                fontWeight: '600'
-              }}>{movie.rating}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ color: colors.red, fontWeight: '700' }}>{movie.rating}</span>
               <span>⭐</span>
             </div>
           </div>
