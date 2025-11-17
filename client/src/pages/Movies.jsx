@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../utils/axios'
 import { Navigation } from '../components/Navigation'
 import { MovieCard } from '../components/MovieCard'
 
@@ -13,7 +13,7 @@ export default function Movies() {
 
   const fetchMovies = async () => {
     try {
-      const response = await axios.get('/api/movies')
+      const response = await api.get('/movies')
       setMovies(response.data)
     } catch (error) {
       console.error('Error fetching movies:', error)

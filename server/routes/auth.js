@@ -5,6 +5,24 @@ const User = require('../models/User')
 
 const router = express.Router()
 
+// Middleware to verify JWT token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ message: 'Access token required' })
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' })
+    }
+    req.user = user
+    next()
+  })
+}
+
 // Helper to generate JWT
 function generateToken(user) {
   const payload = { id: user._id, email: user.email, name: user.name }
@@ -67,6 +85,22 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('Login error:', err)
     return res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// GET /api/auth/me - Verify token and return user info
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password')
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    res.json({
+      user: { _id: user._id, name: user.name, email: user.email }
+    })
+  } catch (err) {
+    console.error('Me endpoint error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 })
 

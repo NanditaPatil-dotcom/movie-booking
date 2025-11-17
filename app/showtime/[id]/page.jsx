@@ -1,31 +1,84 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Navigation } from '@/components/navigation'
+import { useAuth } from '@/hooks/use-auth'
 
-const MOVIES = [
-  { id: 1, title: 'The Quantum Enigma', duration: 148 },
-  { id: 2, title: 'Midnight Mystery', duration: 125 },
-  { id: 3, title: 'Love in Paris', duration: 110 },
-  { id: 4, title: 'Dragon Warriors', duration: 165 },
-  { id: 5, title: 'The Last Stand', duration: 135 },
-  { id: 6, title: 'Laughter Chronicles', duration: 95 },
-]
-
-const SHOWTIMES = ['10:00 AM', '1:30 PM', '4:45 PM', '7:30 PM', '10:00 PM']
+// No mock data, fetch from server
 
 export default function ShowtimePage() {
+  const { checked } = useAuth()
+
   const params = useParams()
   const router = useRouter()
-  const movieId = parseInt(params.id as string)
-  const movie = MOVIES.find(m => m.id === movieId)
+  const movieId = params.id as string
+  const [movie, setMovie] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [selectedShowtime, setSelectedShowtime] = useState<string | null>(null)
 
+  useEffect(() => {
+    const fetchMovie = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/movies/${movieId}`)
+        if (!response.ok) throw new Error('Movie not found')
+        const movieData = await response.json()
+        setMovie(movieData)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMovie()
+  }, [movieId])
+
+  if (!checked) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Checking authentication...</div>
+        </div>
+      </main>
+    )
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Loading movie details...</div>
+        </div>
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div className="text-red-500">Error: {error}</div>
+        </div>
+      </main>
+    )
+  }
+
   if (!movie) {
-    return <div className="min-h-screen flex items-center justify-center">Movie not found</div>
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Movie not found</div>
+        </div>
+      </main>
+    )
   }
 
   const handleContinue = () => {
@@ -52,18 +105,24 @@ export default function ShowtimePage() {
 
             <h2 className="text-2xl font-bold mb-6">Select Showtime</h2>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-              {SHOWTIMES.map(time => (
-                <Button
-                  key={time}
-                  variant={selectedShowtime === time ? 'default' : 'outline'}
-                  onClick={() => setSelectedShowtime(time)}
-                  className="h-12 text-sm"
-                >
-                  {time}
-                </Button>
-              ))}
-            </div>
+            {movie.showtimes && movie.showtimes.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                {movie.showtimes.map(showtime => (
+                  <Button
+                    key={showtime.time}
+                    variant={selectedShowtime === showtime.time ? 'default' : 'outline'}
+                    onClick={() => setSelectedShowtime(showtime.time)}
+                    className="h-12 text-sm"
+                  >
+                    {showtime.time}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No showtimes available for this movie
+              </div>
+            )}
 
             <Button
               onClick={handleContinue}

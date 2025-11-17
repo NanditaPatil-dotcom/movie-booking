@@ -1,11 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useLocation, Link } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Home from './pages/Home'
 import Movies from './pages/Movies'
+import Seats from './pages/Seats'
+import Showtime from './pages/Showtime'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import { Navigation } from './components/Navigation'
 import { Button } from './components/ui/Button'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { RequireAuth } from './components/RequireAuth'
+import api from './utils/axios'
 import './styles/App.css'
 
 const colors = {
@@ -18,6 +23,16 @@ const colors = {
 function useQuery() {
   const { search } = useLocation()
   return useMemo(() => new URLSearchParams(search), [search])
+}
+
+function formatTime(isoString) {
+  if (!isoString) return '10:00 AM'
+  try {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  } catch {
+    return isoString
+  }
 }
 
 function Container({ children, maxWidth = '1200px' }) {
@@ -43,157 +58,16 @@ function Panel({ children, style }) {
   )
 }
 
-// ShowTime selection page
-function ShowTime() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const [selected, setSelected] = useState('')
 
-  const times = ['10:00 AM', '1:30 PM', '5:00 PM', '7:30 PM', '10:00 PM']
 
-  const goSeats = () => {
-    const movieId = id || 'sample'
-    if (!selected) return
-    navigate(`/seats/${movieId}?time=${encodeURIComponent(selected)}`)
-  }
-
-  return (
-    <main style={{ minHeight: '100vh', backgroundColor: colors.light, color: colors.gray }}>
-      <Navigation />
-      <Container>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem' }}>
-          <Panel style={{ height: '22rem' }}>
-            <div style={{ height: '100%', background: '#BFBFBF', borderRadius: '0.5rem' }} />
-          </Panel>
-          <Panel>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem' }}>Select Show Time</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem' }}>
-              {times.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setSelected(t)}
-                  style={{
-                    height: '2.5rem',
-                    borderRadius: '0.5rem',
-                    border: `1px solid ${colors.gray}${selected === t ? '55' : '33'}`,
-                    background: selected === t ? colors.light : colors.white,
-                    color: colors.gray,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-            <div style={{ marginTop: '1rem' }}>
-              <Button size="lg" style={{ width: '100%' }} onClick={goSeats} disabled={!selected}>
-                Select Movie Seats
-              </Button>
-            </div>
-          </Panel>
-        </div>
-      </Container>
-    </main>
-  )
-}
-
-// Seats selection page
-function Seats() {
-  const { id } = useParams()
-  const query = useQuery()
-  const navigate = useNavigate()
-  const time = query.get('time') || '10:00 AM'
-
-  const rows = 'ABCDEFGHIJ'.split('')
-  const cols = Array.from({ length: 14 }, (_, i) => i + 1)
-  const [selected, setSelected] = useState([])
-
-  const toggleSeat = (seat) => {
-    setSelected((prev) =>
-      prev.includes(seat) ? prev.filter((s) => s !== seat) : [...prev, seat]
-    )
-  }
-
-  const proceed = () => {
-    const movieId = id || 'sample'
-    navigate(`/payment/${movieId}?time=${encodeURIComponent(time)}&seats=${selected.join(',')}`)
-  }
-
-  return (
-    <main style={{ minHeight: '100vh', backgroundColor: colors.light, color: colors.gray }}>
-      <Navigation />
-      <Container>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '1rem' }}>
-          <Panel>
-            <h2 style={{ fontWeight: 800, marginBottom: '0.75rem' }}>Select your seats</h2>
-            <div style={{ background: colors.white, borderRadius: '0.5rem', border: `1px solid ${colors.gray}22`, padding: '1rem' }}>
-              <div style={{ textAlign: 'center', color: '#5A5656', marginBottom: '0.75rem' }}>SCREEN</div>
-              <div style={{ display: 'grid', gap: '0.35rem', justifyContent: 'center' }}>
-                {rows.map((r) => (
-                  <div key={r} style={{ display: 'grid', gridTemplateColumns: `24px repeat(${cols.length}, 28px)`, gap: '0.35rem', alignItems: 'center' }}>
-                    <div style={{ textAlign: 'center', color: '#7A7676' }}>{r}</div>
-                    {cols.map((c) => {
-                      const seat = `${r}${c}`
-                      const isSel = selected.includes(seat)
-                      return (
-                        <div
-                          key={seat}
-                          onClick={() => toggleSeat(seat)}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: '0.35rem',
-                            border: `1px solid ${colors.gray}33`,
-                            background: isSel ? '#BDE7C1' : '#EDEDED',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.7rem',
-                            color: colors.gray
-                          }}
-                          title={seat}
-                        >
-                          {c}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-              <Button size="lg" onClick={proceed} disabled={selected.length === 0}>
-                Proceed to payment
-              </Button>
-              <Button variant="secondary" size="lg" onClick={() => navigate(-1)}>Cancel</Button>
-            </div>
-          </Panel>
-          <Panel>
-            <h3 style={{ fontWeight: 800, marginBottom: '0.75rem' }}>Booking Summary</h3>
-            <div style={{ fontSize: '0.875rem', color: '#5A5656' }}>
-              <div style={{ marginBottom: '0.5rem', fontWeight: 700 }}>The Cosmic Adventure</div>
-              <div style={{ marginBottom: '0.5rem' }}><span style={{ padding: '0.1rem 0.5rem', borderRadius: '9999px', background: colors.light, border: `1px solid ${colors.gray}33` }}>Sci-Fi</span></div>
-              <div style={{ marginBottom: '0.25rem' }}>Grand Cinema Hall 1</div>
-              <div style={{ marginBottom: '0.25rem' }}>Oct 28, 2025</div>
-              <div style={{ marginBottom: '0.75rem' }}>{time}</div>
-              <div style={{ marginTop: '0.75rem' }}>
-                <div>Selected Seats: {selected.join(', ') || '-'}</div>
-              </div>
-            </div>
-          </Panel>
-        </div>
-      </Container>
-    </main>
-  )
-}
 
 // Payment page
 function Payment() {
   const { id } = useParams()
   const query = useQuery()
   const navigate = useNavigate()
-  const time = query.get('time') || '10:00 AM'
+  const { user } = useAuth()
+  const time = query.get('showtime') || '10:00 AM'
   const seats = (query.get('seats') || '').split(',').filter(Boolean)
 
   const pricePerSeat = 90
@@ -205,10 +79,52 @@ function Payment() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [method, setMethod] = useState('card')
+  const [loading, setLoading] = useState(false)
 
-  const confirm = () => {
-    // Mock payment success
-    navigate('/confirmation')
+  const confirm = async () => {
+    if (!user) {
+      alert('Please log in to complete your booking')
+      navigate('/signin')
+      return
+    }
+
+    console.log('[Payment] User object:', user)
+    console.log('[Payment] Seats array:', seats)
+
+    setLoading(true)
+    try {
+      console.log('[Payment] Creating booking:', { movieId: id, showtime: time, seats, totalAmount: total })
+
+      const bookingData = {
+        userId: user._id || user.id,
+        movieId: id,
+        movieTitle: 'Movie Title', // This should come from movie data
+        showtime: time,
+        seats,
+        totalAmount: total,
+        email: user.email,
+        name: user.name
+      }
+
+      console.log('[Payment] Sending booking data:', bookingData)
+
+      const response = await api.post('/bookings/create', bookingData)
+
+      console.log('[Payment] Booking created successfully:', response.data)
+      navigate('/confirmation')
+    } catch (error) {
+      console.error('[Payment] Booking failed:', error)
+
+      if (error.response?.status === 400 && error.response?.data?.error?.includes('already booked')) {
+        alert('Booking conflict: One or more seats were already booked. Please select different seats.')
+        // Navigate back to seats page to refresh and show updated availability
+        navigate(`/seats/${id}?showtime=${encodeURIComponent(time)}`)
+      } else {
+        alert('Booking failed. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -255,7 +171,7 @@ function Payment() {
               <div style={{ marginBottom: '0.5rem' }}><span style={{ padding: '0.1rem 0.5rem', borderRadius: '9999px', background: colors.light, border: `1px solid ${colors.gray}33` }}>Sci-Fi</span></div>
               <div style={{ marginBottom: '0.25rem' }}>Grand Cinema Hall 1</div>
               <div style={{ marginBottom: '0.25rem' }}>Oct 28, 2025</div>
-              <div style={{ marginBottom: '0.25rem' }}>{time}</div>
+              <div style={{ marginBottom: '0.25rem' }}>{formatTime(time)}</div>
               <div style={{ marginBottom: '0.75rem' }}>Seats: {seats.join(', ') || '-'}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.25rem' }}>
                 <div>Subtotal</div><div>Rs. {subtotal}</div>
@@ -266,7 +182,9 @@ function Payment() {
               </div>
             </div>
             <div style={{ marginTop: '1rem' }}>
-              <Button size="lg" style={{ width: '100%' }} onClick={confirm}>Confirm and Pay</Button>
+              <Button size="lg" style={{ width: '100%' }} onClick={confirm} disabled={loading}>
+                {loading ? 'Processing...' : 'Confirm and Pay'}
+              </Button>
             </div>
           </Panel>
         </div>
@@ -299,21 +217,30 @@ function Confirmation() {
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/movies" element={<Movies />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/showtime/:id" element={<ShowTime />} />
-          <Route path="/showtime" element={<ShowTime />} />
-          <Route path="/seats/:id" element={<Seats />} />
-          <Route path="/payment/:id" element={<Payment />} />
-          <Route path="/confirmation" element={<Confirmation />} />
-        </Routes>
-      </div>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/movies" element={<Movies />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/showtime/:id" element={<Showtime />} />
+            <Route path="/seats/:id" element={<Seats />} />
+            <Route path="/payment/:id" element={
+              <RequireAuth>
+                <Payment />
+              </RequireAuth>
+            } />
+            <Route path="/confirmation" element={
+              <RequireAuth>
+                <Confirmation />
+              </RequireAuth>
+            } />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
   )
 }
 

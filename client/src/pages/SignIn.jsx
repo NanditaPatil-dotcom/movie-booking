@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import axios from 'axios'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
+import api from '../utils/axios'
 import { Button } from '../components/ui/Button'
 import { Navigation } from '../components/Navigation'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function SignIn() {
   const colors = {
@@ -13,21 +14,41 @@ export default function SignIn() {
   }
 
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Get redirect path from query params
+  const queryParams = new URLSearchParams(location.search)
+  const redirectPath = queryParams.get('redirect') || '/'
 
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const res = await axios.post('/api/auth/login', { email, password })
+      const res = await api.post('/auth/login', { email, password })
       const { user, token } = res.data
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('currentUser', JSON.stringify(user))
-      navigate('/')
+
+      // Use the auth context login method
+      login(token, user)
+
+      // Check for pending booking and proceed directly to payment
+      const { getBookingPayload, clearBookingPayload } = await import('../utils/bookingStorage')
+      const pendingBooking = getBookingPayload()
+
+      if (pendingBooking) {
+        // Clear the stored booking and navigate directly to payment
+        clearBookingPayload()
+        const paymentUrl = `/payment/${pendingBooking.movieId}?time=${encodeURIComponent(pendingBooking.showtimeId)}&seats=${pendingBooking.selectedSeats.join(',')}`
+        navigate(paymentUrl)
+      } else {
+        // No pending booking, go to redirect path or home
+        navigate(redirectPath)
+      }
     } catch (err) {
       const msg = err?.response?.data?.message || 'Login failed'
       setError(msg)

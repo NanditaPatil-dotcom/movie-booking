@@ -1,81 +1,74 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MovieCard } from '@/components/movie-card'
 import { Navigation } from '@/components/navigation'
 
-const MOVIES = [
-  {
-    id: 1,
-    title: 'The Quantum Enigma',
-    genre: 'Sci-Fi',
-    rating: 8.5,
-    duration: 148,
-    image: '/sci-fi-thriller-movie-poster.jpg',
-  },
-  {
-    id: 2,
-    title: 'Midnight Mystery',
-    genre: 'Thriller',
-    rating: 7.8,
-    duration: 125,
-    image: '/thriller-mystery-movie-poster.jpg',
-  },
-  {
-    id: 3,
-    title: 'Love in Paris',
-    genre: 'Romance',
-    rating: 7.2,
-    duration: 110,
-    image: '/rom-com-movie-poster.png',
-  },
-  {
-    id: 4,
-    title: 'Dragon Warriors',
-    genre: 'Fantasy',
-    rating: 8.9,
-    duration: 165,
-    image: '/fantasy-adventure-movie-poster.png',
-  },
-  {
-    id: 5,
-    title: 'The Last Stand',
-    genre: 'Action',
-    rating: 8.1,
-    duration: 135,
-    image: '/action-movie-poster.png',
-  },
-  {
-    id: 6,
-    title: 'Laughter Chronicles',
-    genre: 'Comedy',
-    rating: 7.5,
-    duration: 95,
-    image: '/comedy-movie-poster.png',
-  },
-]
-
 export default function MoviesPage() {
+  const [movies, setMovies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedGenre, setSelectedGenre] = useState('All')
 
-  const genres = ['All', 'Action', 'Sci-Fi', 'Thriller', 'Romance', 'Fantasy', 'Comedy']
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/movies')
+        if (!response.ok) throw new Error('Failed to fetch movies')
+        const data = await response.json()
+        setMovies(data)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchMovies()
+  }, [])
+
+  const genres = useMemo(() => {
+    const allGenres = movies.map(movie => movie.genre)
+    return ['All', ...new Set(allGenres)]
+  }, [movies])
 
   const filteredMovies = useMemo(() => {
-    return MOVIES.filter(movie => {
+    return movies.filter(movie => {
       const matchesSearch = movie.title.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesGenre = selectedGenre === 'All' || movie.genre === selectedGenre
       return matchesSearch && matchesGenre
     })
-  }, [searchQuery, selectedGenre])
+  }, [movies, searchQuery, selectedGenre])
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div>Loading movies...</div>
+        </div>
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navigation />
+        <div className="py-12 px-4 flex items-center justify-center">
+          <div className="text-red-500">Error: {error}</div>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl font-bold mb-8">Now Showing</h1>
@@ -107,7 +100,7 @@ export default function MoviesPage() {
           {filteredMovies.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredMovies.map(movie => (
-                <Link key={movie.id} href={`/showtime/${movie.id}`}>
+                <Link key={movie._id} href={`/showtime/${movie._id}`}>
                   <MovieCard movie={movie} />
                 </Link>
               ))}
