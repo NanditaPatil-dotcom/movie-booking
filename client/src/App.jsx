@@ -35,6 +35,36 @@ function formatTime(isoString) {
   }
 }
 
+// Client-side tolerant showtime matcher (mirrors server/utils/timeUtils.js behavior)
+function findShowtimeClient(movie, selectedShowtime) {
+  const key = String(selectedShowtime || '').trim()
+  if (!movie || !Array.isArray(movie.showtimes)) return null
+
+  // 1) exact string match
+  let st = movie.showtimes.find(s => String(s.time).trim() === key)
+  if (st) return st
+
+  // 2) compare ISO strings
+  st = movie.showtimes.find(s => {
+    try { return new Date(s.time).toISOString() === new Date(key).toISOString() } catch (e) { return false }
+  })
+  if (st) return st
+
+  // 3) +/- 60 seconds tolerance
+  try {
+    const target = new Date(key)
+    if (!isNaN(target)) {
+      const start = new Date(target.getTime() - 60000), end = new Date(target.getTime() + 60000)
+      return movie.showtimes.find(s => {
+        const d = new Date(s.time)
+        return !isNaN(d) && d >= start && d <= end
+      })
+    }
+  } catch (e) {}
+
+  return null
+}
+
 function Container({ children, maxWidth = '1200px' }) {
   return (
     <div style={{ maxWidth, margin: '0 auto', padding: '2rem 1rem' }}>{children}</div>
@@ -67,7 +97,8 @@ function Payment() {
   const query = useQuery()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const time = query.get('showtime') || '10:00 AM'
+  // Accept either `showtime` or `time` query params (some pages use one or the other)
+  const time = query.get('showtime') || query.get('time') || '10:00 AM'
   const seats = (query.get('seats') || '').split(',').filter(Boolean)
 
   const pricePerSeat = 90
@@ -95,11 +126,27 @@ function Payment() {
     try {
       console.log('[Payment] Creating booking:', { movieId: id, showtime: time, seats, totalAmount: total })
 
+      // Fetch movie to resolve the exact showtime string stored on the server
+      let exactShowtime = time
+      try {
+        const movieRes = await api.get(`/movies/${id}`)
+        const movie = movieRes.data
+        const matched = findShowtimeClient(movie, time)
+        if (matched) {
+          exactShowtime = matched.time
+          console.log('[Payment] Resolved exact showtime to:', exactShowtime)
+        } else {
+          console.warn('[Payment] Could not resolve exact showtime for:', time)
+        }
+      } catch (fetchErr) {
+        console.warn('[Payment] Failed to fetch movie to resolve showtime:', fetchErr)
+      }
+
       const bookingData = {
         userId: user._id || user.id,
         movieId: id,
         movieTitle: 'Movie Title', // This should come from movie data
-        showtime: time,
+        showtime: exactShowtime,
         seats,
         totalAmount: total,
         email: user.email,
@@ -115,12 +162,21 @@ function Payment() {
     } catch (error) {
       console.error('[Payment] Booking failed:', error)
 
-      if (error.response?.status === 400 && error.response?.data?.error?.includes('already booked')) {
+      const status = error.response?.status
+      const data = error.response?.data
+
+      if (status === 400 && data?.error?.includes('already booked')) {
         alert('Booking conflict: One or more seats were already booked. Please select different seats.')
-        // Navigate back to seats page to refresh and show updated availability
+        navigate(`/seats/${id}?showtime=${encodeURIComponent(time)}`)
+      } else if (status === 404 && data) {
+        // Show informative message from server when showtime not found
+        const available = data.availableShowtimes ? ` Available: ${data.availableShowtimes.join(', ')}` : ''
+        alert(`Booking failed: ${data.error || 'Not Found'}.${available}`)
+        // Navigate back to seats so user can re-select
         navigate(`/seats/${id}?showtime=${encodeURIComponent(time)}`)
       } else {
-        alert('Booking failed. Please try again.')
+        const serverMsg = data?.error || error.message
+        alert(`Booking failed. ${serverMsg}`)
       }
     } finally {
       setLoading(false)
