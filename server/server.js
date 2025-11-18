@@ -32,7 +32,7 @@ async function seedMovies() {
       genre: 'Sci-Fi',
       rating: 8.5,
       duration: 135,
-      image: 'pinterest:',
+      image: 'pinterest:https://i.pinimg.com/736x/aa/45/d2/aa45d2009244b72ced03a261f5202207.jpg',
       description: 'An epic journey through space and time that will leave you breathless.',
       releaseDate: new Date('2025-10-01'),
       showtimes: [
@@ -48,7 +48,7 @@ async function seedMovies() {
       genre: 'Adventure',
       rating: 7.9,
       duration: 122,
-      image: 'pinterest:https://i.pinimg.com/736x/aa/45/d2/aa45d2009244b72ced03a261f5202207.jpg',
+      image: 'pinterest:https://i.pinimg.com/1200x/a9/d2/ab/a9d2abda06ef95be07c9d635bd8760d1.jpg',
       description: 'A small crew explores an uncharted ocean world filled with wonders and danger.',
       releaseDate: new Date('2025-09-18'),
       showtimes: [
@@ -63,7 +63,7 @@ async function seedMovies() {
       genre: 'Action',
       rating: 7.2,
       duration: 110,
-      image: 'pinterest:',
+      image: 'pinterest:https://i.pinimg.com/736x/fd/8d/4e/fd8d4e0442314a435fe3ae56384b59ae.jpg',
       description: 'A high-octane heist film that plays out over a single, tense night.',
       releaseDate: new Date('2025-11-01'),
       showtimes: [
@@ -76,7 +76,7 @@ async function seedMovies() {
       genre: 'Family',
       rating: 8.0,
       duration: 90,
-      image: 'pinterest:',
+      image: 'pinterest:https://i.pinimg.com/736x/06/d5/de/06d5de799f561acb3ed9897c2c60f9d8.jpg',
       description: 'A charming anthology of animated short stories for all ages.',
       releaseDate: new Date('2025-08-05'),
       showtimes: [
@@ -90,7 +90,7 @@ async function seedMovies() {
       genre: 'Romance',
       rating: 6.8,
       duration: 105,
-      image: 'pinterest:',
+      image: 'pinterest:https://i.pinimg.com/1200x/08/e5/1c/08e51cbc6739d5a4148a69447dc4815d.jpg',
       description: 'A tender story of two strangers whose paths cross at the perfect moment.',
       releaseDate: new Date('2025-07-14'),
       showtimes: [
@@ -98,7 +98,7 @@ async function seedMovies() {
         { time: '14:30 PM', bookedSeats: [] },
         { time: '19:00 PM', bookedSeats: [] }
       ]
-    }
+    },
   ]
 
   try {
