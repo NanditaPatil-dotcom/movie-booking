@@ -27,12 +27,32 @@ function useQuery() {
 
 function formatTime(isoString) {
   if (!isoString) return '10:00 AM'
-  try {
-    const date = new Date(isoString)
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-  } catch {
-    return isoString
+  const s = String(isoString).trim()
+
+  // If the string is explicitly 'Invalid Date', return a safe fallback
+  if (s.toLowerCase() === 'invalid date') return '-'
+
+  // If it's already a human-readable time like "10:00 AM", normalize and return
+  const timeMatch = s.match(/^(\d{1,2}:\d{2}\s?(AM|PM))$/i)
+  if (timeMatch) return timeMatch[0].toUpperCase()
+
+  // Try parsing as a Date. If valid, format the time portion.
+  let date = new Date(s)
+  if (isNaN(date)) {
+    // Some strings may be ISO without timezone — try appending Z
+    try {
+      date = new Date(s + 'Z')
+    } catch (e) {
+      // ignore
+    }
   }
+
+  if (!isNaN(date)) {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  }
+
+  // Fallback: show the raw string (but avoid showing 'Invalid Date')
+  return s
 }
 
 // Client-side tolerant showtime matcher (mirrors server/utils/timeUtils.js behavior)
