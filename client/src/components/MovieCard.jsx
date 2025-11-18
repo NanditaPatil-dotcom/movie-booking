@@ -40,7 +40,17 @@ export function MovieCard({ movie }) {
             }}
           >
             <img
-              src={(movie.image && movie.image.startsWith('/')) ? (process.env.REACT_APP_API_URL || 'http://localhost:5000') + movie.image : (movie.image || '/placeholder.svg')}
+              src={(() => {
+                const img = movie.image || ''
+                // Full remote URL (Pinterest or other)
+                if (img.startsWith('http://') || img.startsWith('https://')) return img
+                // Custom placeholder syntax: 'pinterest:<url>' -> use the URL after ':'
+                if (img.startsWith('pinterest:')) return img.slice('pinterest:'.length) || '/placeholder.svg'
+                // Server-served absolute path stored on movie (e.g. '/movie1.jpeg')
+                if (img.startsWith('/')) return (process.env.REACT_APP_API_URL || 'http://localhost:5000') + img
+                // Relative path or missing -> use as-is or fallback
+                return img || '/placeholder.svg'
+              })()}
               alt={movie.title}
               style={{
                 width: '100%',
