@@ -2,6 +2,20 @@
 
 A movie ticket booking application built with the MERN stack (MongoDB, Express.js, React, Node.js).
 
+
+## to run 
+frontend
+```
+cd client
+npm install
+npm start
+```
+backend
+```
+cd server
+npm install
+npm run dev
+```
 ## Features
 
 - Browse movies
