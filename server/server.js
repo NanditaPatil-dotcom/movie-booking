@@ -32,7 +32,7 @@ async function seedMovies() {
       genre: 'Sci-Fi',
       rating: 8.5,
       duration: 135,
-      image: '/movie1.jpeg',
+      image: 'pinterest:',
       description: 'An epic journey through space and time that will leave you breathless.',
       releaseDate: new Date('2025-10-01'),
       showtimes: [
@@ -48,7 +48,7 @@ async function seedMovies() {
       genre: 'Adventure',
       rating: 7.9,
       duration: 122,
-      image: '/ocean-of-stars.jpg',
+      image: 'pinterest:https://i.pinimg.com/736x/aa/45/d2/aa45d2009244b72ced03a261f5202207.jpg',
       description: 'A small crew explores an uncharted ocean world filled with wonders and danger.',
       releaseDate: new Date('2025-09-18'),
       showtimes: [
@@ -63,7 +63,7 @@ async function seedMovies() {
       genre: 'Action',
       rating: 7.2,
       duration: 110,
-      image: '/midnight-heist.jpg',
+      image: 'pinterest:',
       description: 'A high-octane heist film that plays out over a single, tense night.',
       releaseDate: new Date('2025-11-01'),
       showtimes: [
@@ -76,7 +76,7 @@ async function seedMovies() {
       genre: 'Family',
       rating: 8.0,
       duration: 90,
-      image: '/animated-tales.jpg',
+      image: 'pinterest:',
       description: 'A charming anthology of animated short stories for all ages.',
       releaseDate: new Date('2025-08-05'),
       showtimes: [
@@ -90,7 +90,7 @@ async function seedMovies() {
       genre: 'Romance',
       rating: 6.8,
       duration: 105,
-      image: '/romantic-sunset.jpg',
+      image: 'pinterest:',
       description: 'A tender story of two strangers whose paths cross at the perfect moment.',
       releaseDate: new Date('2025-07-14'),
       showtimes: [
@@ -116,6 +116,11 @@ async function seedMovies() {
           console.log('Updated showtimes for movie:', m.title, 'added:', toAdd.map(t => t.time))
         } else {
           console.log('Movie already has all showtimes, skipping:', m.title)
+        }
+        // Ensure image field from seed is applied to existing movie when provided
+        if (m.image && String(exists.image || '').trim() !== String(m.image).trim()) {
+          await Movie.updateOne({ _id: exists._id }, { $set: { image: m.image } })
+          console.log('Updated image for movie:', m.title)
         }
       }
     }
