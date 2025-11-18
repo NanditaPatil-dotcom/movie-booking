@@ -40,7 +40,7 @@ export function MovieCard({ movie }) {
             }}
           >
             <img
-              src={movie.image || '/placeholder.svg'}
+              src={(movie.image && movie.image.startsWith('/')) ? (process.env.REACT_APP_API_URL || 'http://localhost:5000') + movie.image : (movie.image || '/placeholder.svg')}
               alt={movie.title}
               style={{
                 width: '100%',

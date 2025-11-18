@@ -6,9 +6,14 @@ require('dotenv').config()
 const app = express()
 const PORT = process.env.PORT || 5000
 
+const path = require('path')
+
 // Middleware
 app.use(cors())
 app.use(express.json())
+
+// Serve static assets from the repo-level `public/` so seeded movie images are available
+app.use(express.static(path.join(__dirname, '..', 'public')))
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/movie-booking', {
@@ -27,7 +32,7 @@ async function seedMovies() {
       genre: 'Sci-Fi',
       rating: 8.5,
       duration: 135,
-      image: '/sci-fi-thriller-movie-poster.jpg',
+      image: '/movie1.jpeg',
       description: 'An epic journey through space and time that will leave you breathless.',
       releaseDate: new Date('2025-10-01'),
       showtimes: [
