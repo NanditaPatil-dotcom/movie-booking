@@ -53,5 +53,3 @@ movie-booking/
 └── package.json     # Root package.json
 ```
 
-
-This project is licensed under the MIT License.
